@@ -43,9 +43,34 @@ def json_path_or_string(param_name):
     return wrapper
 
 
+def json_path_or_string_parameter(param_name):
+    """JSON parameter handler"""
+    def wrapper(fun):
+        arg(
+            param_name,
+            help="JSON string or path (preceded by '@') to a JSON configuration file",
+        )(fun)
+
+        @wraps(fun)
+        def wrapped(self):
+            sanitized_param_name = param_name.replace("--", "").replace("-", "_")
+            try:
+                setattr(
+                    self.args,
+                    sanitized_param_name,
+                    get_json_config(getattr(self.args, sanitized_param_name, "")),
+                )
+            except jsonlib.decoder.JSONDecodeError as err:
+                raise UserError from err
+            return fun(self)
+
+        return wrapped
+
+    return wrapper
+
+
 def user_config_json():
     """User config that accepts arbitrary JSON"""
-
     def wrapper(fun):
         arg(
             "--user-config-json",
@@ -185,6 +210,7 @@ arg.vat_id = arg("--vat-id", help="VAT ID of an EU VAT area business")
 arg.verbose = arg("-v", "--verbose", help="Verbose output", action="store_true", default=False)
 arg.connector_name = arg("connector", help="Connector name")
 arg.json_path_or_string = json_path_or_string
+arg.json_path_or_string_parameter = json_path_or_string_parameter
 arg.subject = arg("--subject", required=True, help="Subject name")
 arg.version_id = arg("--version-id", required=True, help="Subject version")
 arg.compatibility = arg(

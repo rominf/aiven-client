@@ -23,7 +23,6 @@ UNCHANGED = object()  # used as a sentinel value
 
 class Error(Exception):
     """Request error"""
-
     def __init__(self, response, status=520):
         Exception.__init__(self, response.text)
         self.response = response
@@ -32,7 +31,6 @@ class Error(Exception):
 
 class AivenClientBase:  # pylint: disable=old-style-class
     """Aiven Client with low-level HTTP operations"""
-
     def __init__(self, base_url, show_http=False, request_timeout=None):
         self.log = logging.getLogger("AivenClient")
         self.auth_token = None
@@ -170,7 +168,6 @@ class AivenClientBase:  # pylint: disable=old-style-class
 
 class AivenClient(AivenClientBase):
     """Aiven Client with high-level operations"""
-
     def get_service_versions(self):
         return self.verify(self.get, "/service_versions", result_key="service_versions")
 
@@ -1034,6 +1031,7 @@ class AivenClient(AivenClientBase):
 
     def create_flink_table(
         self,
+        *,
         project,
         service,
         integration_id,
@@ -1047,7 +1045,8 @@ class AivenClient(AivenClientBase):
         kafka_startup_mode=None,
         jdbc_table=None,
         opensearch_index=None,
-        like_options=None
+        like_options=None,
+        table_properties=None,
     ):
         path = self.build_path(
             "project",
@@ -1057,29 +1056,32 @@ class AivenClient(AivenClientBase):
             "flink",
             "table",
         )
-        body = {
-            "integration_id": integration_id,
-            "name": table_name,
-            "schema_sql": schema_sql,
-        }
-        if kafka_topic:
-            body["kafka_topic"] = kafka_topic
-        if kafka_connector_type:
-            body["kafka_connector_type"] = kafka_connector_type
-        if kafka_key_format:
-            body["kafka_key_format"] = kafka_key_format
-        if kafka_key_fields:
-            body["kafka_key_fields"] = kafka_key_fields
-        if kafka_value_format:
-            body["kafka_value_format"] = kafka_value_format
-        if kafka_startup_mode:
-            body["kafka_startup_mode"] = kafka_startup_mode
-        if jdbc_table:
-            body["jdbc_table"] = jdbc_table
-        if opensearch_index:
-            body["opensearch_index"] = opensearch_index
-        if like_options:
-            body["like_options"] = like_options
+        if not table_properties:
+            body = {
+                "integration_id": integration_id,
+                "name": table_name,
+                "schema_sql": schema_sql,
+            }
+            if kafka_topic:
+                body["kafka_topic"] = kafka_topic
+            if kafka_connector_type:
+                body["kafka_connector_type"] = kafka_connector_type
+            if kafka_key_format:
+                body["kafka_key_format"] = kafka_key_format
+            if kafka_key_fields:
+                body["kafka_key_fields"] = kafka_key_fields
+            if kafka_value_format:
+                body["kafka_value_format"] = kafka_value_format
+            if kafka_startup_mode:
+                body["kafka_startup_mode"] = kafka_startup_mode
+            if jdbc_table:
+                body["jdbc_table"] = jdbc_table
+            if opensearch_index:
+                body["opensearch_index"] = opensearch_index
+            if like_options:
+                body["like_options"] = like_options
+        else:
+            body = table_properties
         return self.verify(self.post, path, body=body)
 
     def get_flink_table(self, project, service, table_id):
