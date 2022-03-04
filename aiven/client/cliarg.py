@@ -45,6 +45,7 @@ def json_path_or_string(param_name):
 
 def json_path_or_string_parameter(param_name):
     """JSON parameter handler"""
+
     def wrapper(fun):
         arg(
             param_name,
@@ -71,6 +72,7 @@ def json_path_or_string_parameter(param_name):
 
 def user_config_json():
     """User config that accepts arbitrary JSON"""
+
     def wrapper(fun):
         arg(
             "--user-config-json",
