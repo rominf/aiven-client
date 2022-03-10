@@ -899,6 +899,8 @@ class AivenCLI(argx.CommandLineTool):
             entry["service_type"] = service_type
             output.append(entry)
 
+        output.append({"service_type": "sqlite", "description": "SQLite - the most used database engine in the world"})
+
         self.print_response(output, json=self.args.json, table_layout=[["service_type", "description"]])
 
         if not self.args.json and self.args.verbose:
@@ -958,6 +960,8 @@ class AivenCLI(argx.CommandLineTool):
     def service__list(self):
         """List services"""
         services = self.client.get_services(project=self.get_project())
+        services.extend(self.client.get_services_sqlite(project=self.get_project()))
+
         if self.args.service_type is not None:
             services = [s for s in services if s["service_type"] == self.args.service_type]
         if self.args.service_name:
@@ -3745,6 +3749,10 @@ ssl.truststore.type=JKS
         """Create a service"""
         service_type_info = self.args.service_type.split(":")
         service_type = service_type_info[0]
+
+        if service_type == "sqlite":
+            self.client.create_service_sqlite(project=self.args.project, service=self.args.service_name)
+            return
 
         plan = None
         if len(service_type_info) == 2:

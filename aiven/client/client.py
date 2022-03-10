@@ -2,6 +2,12 @@
 #
 # This file is under the Apache License, Version 2.0.
 # See the file `LICENSE` for details.
+import os.path
+import sqlite3
+from datetime import datetime
+from pathlib import Path
+
+from . import envdefault
 from .common import UNDEFINED
 from .session import get_requests_session
 from urllib.parse import quote
@@ -195,6 +201,8 @@ class AivenClient(AivenClientBase):
         return self.verify(self.get, path, result_key="clouds")
 
     def get_service(self, project, service):
+        if services := self.get_services_sqlite(project=project, service=service):
+            return services[0]
         return self.verify(
             self.get,
             self.build_path("project", project, "service", service),
@@ -1315,6 +1323,14 @@ class AivenClient(AivenClientBase):
         body = {"tags": tags}
         return self.verify(self.put, path, body=body)
 
+    def get_sqlite_project_dir(self, project):
+        return Path(envdefault.AIVEN_CONFIG_DIR).joinpath("db/sqlite/", project)
+
+    def create_service_sqlite(self, project, service):
+        project_dir = self.get_sqlite_project_dir(project)
+        project_dir.mkdir(0o700, parents=True, exist_ok=True)
+        sqlite3.connect(project_dir.joinpath(f"{service}.sqlite3"))
+
     def create_service(
         self,
         project,
@@ -1551,6 +1567,22 @@ class AivenClient(AivenClientBase):
         )
         body = {"tags": tags}
         return self.verify(self.put, path, body=body)
+
+    def get_services_sqlite(self, project, service=None):
+        pattern = "*.sqlite3" if service is None else f"{service}.sqlite3"
+        return [
+            {
+                "cloud_name": "localhost",
+                "create_time": datetime.fromtimestamp(os.path.getctime(database_path)).isoformat().split(".", 1)[0] + "Z",
+                "plan": "free",
+                "service_name": database_path.stem,
+                "service_type": "sqlite",
+                "service_uri": str(database_path),
+                "state": "RUNNING",
+                "update_time": datetime.fromtimestamp(os.path.getmtime(database_path)).isoformat().split(".", 1)[0] + "Z",
+            }
+            for database_path in self.get_sqlite_project_dir(project).glob(pattern)
+        ]
 
     def get_services(self, project):
         return self.verify(
