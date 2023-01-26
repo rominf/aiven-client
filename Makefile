@@ -1,14 +1,12 @@
 short_ver = 2.18.0
 long_ver = $(shell git describe --long 2>/dev/null || echo $(short_ver)-0-unknown-g`git describe --always`)
-generated = aiven/client/version.py
 PYTHON ?= python3
 PYTHON_DIRS = aiven tests
 RPM=rpms/noarch/aiven-client-$(short_ver)-$(subst -,.,$(subst $(short_ver)-,,$(long_ver))).*.noarch.rpm
 
-all: $(generated)
-
-aiven/client/version.py: .git/index
-	$(PYTHON) version.py $@
+.PHONY: aiven/client/version.py
+aiven/client/version.py:
+	$(PYTHON) -m setuptools_scm
 
 test: pytest
 lint: flake8 mypy pylint
@@ -39,7 +37,7 @@ pylint:
 pytest:
 	$(PYTHON) -m pytest -vv tests/
 
-coverage: $(generated)
+coverage:
 	$(PYTHON) -m coverage run --source aiven -m pytest $(PYTEST_ARG) tests/
 	$(PYTHON) -m coverage report --show-missing
 
@@ -63,7 +61,7 @@ build-dep-fedora:
 .PHONY: rpm
 rpm: $(RPM)
 
-$(RPM): $(generated)
+$(RPM):
 	git archive --prefix=aiven-client/ HEAD -o rpm-src-aiven-client.tar
 	# add generated files to the tar, they're not in git repository
 	tar -r -f rpm-src-aiven-client.tar --transform=s,aiven/,aiven-client/aiven/, $(generated)
@@ -79,3 +77,4 @@ install-rpm: $(RPM)
 	sudo dnf install $<
 
 .PHONY: build-dep-fedora clean coverage pytest mypy pylint flake8 reformat test validate-style
+
