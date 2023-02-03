@@ -60,13 +60,11 @@ avn = "aiven.client.__main__:main"
 [tool.hatch.version]
 source = "vcs"
 
-[tool.hatch.build]
-include = [
-  "aiven/client/py.typed",
-]
-
 [tool.hatch.build.hooks.vcs]
 version-file = "aiven/client/version.py"
+
+[tool.hatch.build.targets.wheel]
+only-include = ["aiven/client"]
 
 [tool.black]
 line-length = 125
